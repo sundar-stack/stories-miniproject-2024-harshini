@@ -29,6 +29,9 @@ const inputRules = ref({
   required: [(v) => !!v || "Text Required"],
 });
 
+const filterNames = ref(["ALL STORIES", "MY STORIES"]);
+const currentFilter = ref(["ALL STORIES"]);
+
 const storyFormData = ref({
   title: "",
   languages: ["english"],
@@ -107,6 +110,9 @@ async function getListData() {
       snackbar.value.color = "error";
       snackbar.value.text = error.response.data.message;
     });
+  if (currentFilter.value === "MY STORIES") {
+    currentFilter.value = "ALL STORIES";
+  }
 }
 
 async function createItem() {
@@ -153,7 +159,6 @@ async function createItem() {
 
 async function updateItem() {
   const isFormValid = await formRef.value.validate();
-  console.log("fdafaf",isFormValid);
   if (isFormValid.valid) {
     const currCategory = categories.value.find(
       (cat) => storyFormData.value.category === cat.name
@@ -161,7 +166,6 @@ async function updateItem() {
     const categoryId = currCategory?.id;
     storyFormData.value = {
       ...storyFormData.value,
-      userId: user.value.id,
       categoryId: categoryId,
     };
     isFormLoading.value = true;
@@ -246,19 +250,39 @@ function handleEdit(story) {
     search: "",
     time_period,
     updatedStory: translatedStoryText,
-    id
+    id,
   };
 }
+
+const handleFilterChange = async () => {
+  if (currentFilter.value === "MY STORIES") {
+    stories.value = stories.value.filter(
+      (story) => story.userId === user.value.id
+    );
+  } else {
+    await getListData();
+  }
+};
+
+watch(currentFilter, handleFilterChange);
 </script>
 
 <template>
   <v-container>
     <div id="body">
       <v-row align="center" class="mb-4">
-        <v-col cols="8"
-          ><v-card-title class="pl-0 text-h4 font-weight-bold"
+        <v-col cols="4">
+          <v-card-title class="pl-0 text-h4 font-weight-bold"
             >{{ `Manage Stories` }}
           </v-card-title>
+        </v-col>
+        <v-col>
+          <v-select
+            label="Filter"
+            :items="filterNames"
+            variant="outlined"
+            v-model="currentFilter"
+          ></v-select>
         </v-col>
         <v-col class="d-flex justify-end" cols="4">
           <v-btn color="accent" @click="openForm()" append-icon="mdi-plus">{{
